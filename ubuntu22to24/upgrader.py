@@ -1,20 +1,20 @@
-# Copyright 2024. Plesk International GmbH. All rights reserved.
+# Copyright 1999-2026. Plesk International GmbH. All rights reserved.
 
 import argparse
 import os
 import typing
 
-from pleskdistup import actions
+from pleskdistup import actions as common_actions
 from pleskdistup.common import action, feedback, php, version, strings
 from pleskdistup.phase import Phase
 from pleskdistup.upgrader import dist, DistUpgrader, DistUpgraderFactory, PathType
 
-import ubuntu20to22.config
+import ubuntu22to24.config
 
 
-class Ubuntu20to22Upgrader(DistUpgrader):
-    _distro_from = dist.Ubuntu("20")
-    _distro_to = dist.Ubuntu("22")
+class Ubuntu22to24Upgrader(DistUpgrader):
+    _distro_from = dist.Ubuntu("22")
+    _distro_to = dist.Ubuntu("24")
 
     def __init__(self):
         super().__init__()
@@ -40,15 +40,15 @@ class Ubuntu20to22Upgrader(DistUpgrader):
 
     @property
     def upgrader_name(self) -> str:
-        return "Plesk::Ubuntu20to22Upgrader"
+        return "Plesk::Ubuntu22to24Upgrader"
 
     @property
     def upgrader_version(self) -> str:
-        return ubuntu20to22.config.revision
+        return ubuntu22to24.config.revision
 
     @property
     def issues_url(self) -> str:
-        return "https://github.com/plesk/ubuntu20to22/issues"
+        return "https://github.com/plesk/ubuntu22to24/issues"
 
     def prepare_feedback(
         self,
@@ -72,78 +72,80 @@ class Ubuntu20to22Upgrader(DistUpgrader):
         new_os = str(self._distro_to)
         return {
             "Prepare": [
-                actions.HandleConversionStatus(
+                common_actions.HandleConversionStatus(
                     options.status_flag_path,
                     options.completion_flag_path,
                 ),
-                actions.AddFinishSshLoginMessage(new_os),  # Executed at the finish phase only
-                actions.AddInProgressSshLoginMessage(new_os),
-                actions.DisablePleskSshBanner(),
-                actions.UninstallTuxcareEls(),
-                actions.ProhibitLibodbcFromMicrosoftRepository(),
-                actions.AddUpgradeSystemdService(
+                common_actions.AddFinishSshLoginMessage(new_os),  # Executed at the finish phase only
+                common_actions.AddInProgressSshLoginMessage(new_os),
+                common_actions.DisablePleskSshBanner(),
+                common_actions.UninstallTuxcareEls(),
+                common_actions.ProhibitLibodbcFromMicrosoftRepository(),
+                common_actions.AddUpgradeSystemdService(
                     os.path.abspath(upgrader_bin_path),
                     options,
                 ),
             ],
             "Preupgrade packages": [
-                actions.RepairPleskInstallation(),  # Executed at the finish phase only
-                actions.UpgradePackages(allow_downgrade=self.downgrade_allowed),
-                actions.UpdatePlesk(),
-                actions.ConfigureMariadb({
+                common_actions.RepairPleskInstallation(),  # Executed at the finish phase only
+                common_actions.UpgradePackages(allow_downgrade=self.downgrade_allowed),
+                common_actions.UpdatePlesk(),
+                common_actions.ConfigureMariadb({
                     "mysqld.bind-address": {
-                        "prepare": actions.ConfigValueReplacer(
+                        "prepare": common_actions.ConfigValueReplacer(
                             new_value="127.0.0.1",
                             old_value="::ffff:127.0.0.1",
                         ),
-                        "revert": actions.ConfigValueReplacer(
+                        "revert": common_actions.ConfigValueReplacer(
                             new_value="::ffff:127.0.0.1",
                             old_value="127.0.0.1",
                         ),
-                    },
+                   },
                     "mysqld.innodb_fast_shutdown": {
-                        "prepare": actions.ConfigValueReplacer(
+                        "prepare": common_actions.ConfigValueReplacer(
                             new_value="0",
                             old_value=None,
                         ),
-                        "revert": actions.ConfigValueReplacer(
+                        "revert": common_actions.ConfigValueReplacer(
                             new_value=None,
                             old_value="0",
                         ),
                     },
                 }),
-                actions.HoldMariadbAmbientCapabilities(),
-                actions.EnableEnhancedSecurityMode(),
+                common_actions.HoldMariadbAmbientCapabilities(),
+                common_actions.EnableEnhancedSecurityMode(),
             ],
             "Switch repositories": [
                 # UpdateLegacyPhpRepositories specific for distupgrades where
                 #  we support following PHP versions: PHP 7.1, 7.2, 7.3.
-                actions.UpdateLegacyPhpRepositories(self._distro_from, self._distro_to),
-                actions.AdoptAptRepositoriesUbuntu([
-                    strings.create_replace_string_function('focal', 'jammy'),
-                    strings.create_replace_regexp_function(r'(http|https)://([^/]+)/(.*\b)(ubuntu|ubuntu-testing)/20\.04(\b.*)', '\g<1>://\g<2>/\g<3>\g<4>/22.04\g<5>')
+                common_actions.UpdateLegacyPhpRepositories(self._distro_from, self._distro_to),
+                common_actions.AdoptAptRepositoriesUbuntu([
+                    strings.create_replace_string_function('jammy', 'noble'),
+                    strings.create_replace_regexp_function(
+                        r'(http|https)://([^/]+)/(.*\b)(ubuntu|ubuntu-testing)/22\.04(\b.*)',
+                        r'\g<1>://\g<2>/\g<3>\g<4>/24.04\g<5>')
                     ], name="modify apt repositories to new OS"
                 ),
-                actions.SwitchPleskRepositories(to_os_version="22.04"),
+                common_actions.SwitchPleskRepositories(to_os_version="24.04"),
             ],
             "Dist-upgrade": [
-                actions.DoDistupgrade(),
+                common_actions.DoDistupgrade(),
             ],
             "Update Plesk": [
-                actions.UpdatePlesk(update_cmd_args=["--skip-cleanup"]),
+                common_actions.UpdatePlesk(update_cmd_args=["--skip-cleanup"]),
             ],
             "Update Plesk extensions": [
-                actions.UpdatePleskExtensions([
+                common_actions.UpdatePleskExtensions([
                     "panel-migrator", "site-import", "docker", "grafana",
-                    "ruby",
+                    "ruby", "kolab",
                 ]),
             ],
             "Finishing actions": [
-                actions.Reboot(
+                common_actions.Reboot(
                     prepare_next_phase=Phase.FINISH,
                     name="reboot and perform finishing actions",
                 ),
-                actions.Reboot(
+                common_actions.Reboot(
                     prepare_reboot=None,
                     post_reboot=action.RebootType.AFTER_LAST_STAGE,
                     name="final reboot",
@@ -159,18 +161,19 @@ class Ubuntu20to22Upgrader(DistUpgrader):
         if phase is Phase.FINISH:
             return []
 
-        PHP_VERSIONS_SUPPORTED_BY_UBUNTU_22 = [str(php) for php in php.get_known_php_versions() if php >= version.PHPVersion("7.0")]
+        PHP_VERSIONS_SUPPORTED_BY_UBUNTU_24 = [
+            str(php) for php in php.get_known_php_versions() if php >= version.PHPVersion("7.4")]
 
         return [
-            actions.AssertMinPleskVersion("18.0.44"),
-            actions.AssertPleskInstallerNotInProgress(),
-            actions.AssertInstalledPhpVersionsInList(PHP_VERSIONS_SUPPORTED_BY_UBUNTU_22),
-            actions.AssertPhpVersionsUsedByWebsitesInList(PHP_VERSIONS_SUPPORTED_BY_UBUNTU_22),
-            actions.AssertPhpVersionsUsedByCronInList(PHP_VERSIONS_SUPPORTED_BY_UBUNTU_22),
-            actions.AssertDpkgNotLocked(),
-            actions.AssertNotInContainer(),
-            actions.AssertPleskComponents(not_installed=["mailman"]),
-            actions.AssertMinFreeDiskSpace(
+            common_actions.AssertMinPleskVersion("18.0.62"),
+            common_actions.AssertPleskInstallerNotInProgress(),
+            common_actions.AssertInstalledPhpVersionsInList(PHP_VERSIONS_SUPPORTED_BY_UBUNTU_24),
+            common_actions.AssertPhpVersionsUsedByWebsitesInList(PHP_VERSIONS_SUPPORTED_BY_UBUNTU_24),
+            common_actions.AssertPhpVersionsUsedByCronInList(PHP_VERSIONS_SUPPORTED_BY_UBUNTU_24),
+            common_actions.AssertDpkgNotLocked(),
+            common_actions.AssertNotInContainer(),
+            common_actions.AssertPleskComponents(not_installed=["mailman"]),
+            common_actions.AssertMinFreeDiskSpace(
                 {
                     # Space requirements in bytes
                     "/boot": 150 * 1024**2,
@@ -179,20 +182,21 @@ class Ubuntu20to22Upgrader(DistUpgrader):
                     "/var": 2000 * 1024**2,
                 }
             ),
-            actions.AssertRepositorySubstitutionAvailable(
+            common_actions.AssertRepositorySubstitutionAvailable(
                 target_repository_file="/etc/apt/sources.list.d/mariadb.list",
-                substitution_rule=strings.create_replace_string_function("focal", "jammy"),
+                substitution_rule=strings.create_replace_string_function("jammy", "noble"),
                 name="asserting mariadb repository substitution available",
                 description_addition="""\tCurrent MariaDB repository is not available on the target platform.
 \tTo proceed with dist-upgrade update MariaDB to version 10.6 or higher using the official repository,
-\tor configure a custom repository that supports Ubuntu 22.04.
+\tor configure a custom repository that supports Ubuntu 24.04.
 """,
             ),
-            actions.AssertNoLibodbcFromMicrosoftRepository(),
+            common_actions.AssertNoLibodbcFromMicrosoftRepository(),
         ]
 
     def parse_args(self, args: typing.Sequence[str]) -> None:
-        DESC_MESSAGE = f"""Use this upgrader to dist-upgrade an {self._distro_from} server with Plesk to {self._distro_to}. The process consists of the following general stages:
+        DESC_MESSAGE = f"""Use this upgrader to dist-upgrade an \
+{self._distro_from} server with Plesk to {self._distro_to}.
 The process consists of the following general stages:
 
 -- Preparation (about 5 minutes) - The OS is prepared for the conversion.
@@ -218,14 +222,17 @@ the log file.
             "-h", "--help", action="help", default=argparse.SUPPRESS,
             help=argparse.SUPPRESS,
         )
-        parser.add_argument("--allow-downgrade", action="store_true", dest="downgrade_allowed", default=False,
-                            help="Allow packages downgrade. In some cases, apt may downgrade packages to the previous version during the dist-upgrade.")
+        parser.add_argument(
+            "--allow-downgrade", action="store_true", dest="downgrade_allowed",
+            default=False,
+            help="Allow packages downgrade. In some cases, apt may downgrade "
+            "packages to the previous version during the dist-upgrade.")
         options = parser.parse_args(args)
 
         self.downgrade_allowed = options.downgrade_allowed
 
 
-class Ubuntu20to22Factory(DistUpgraderFactory):
+class Ubuntu22to24Factory(DistUpgraderFactory):
     def __init__(self):
         super().__init__()
 
@@ -240,11 +247,11 @@ class Ubuntu20to22Factory(DistUpgraderFactory):
         from_system: typing.Optional[dist.Distro] = None,
         to_system: typing.Optional[dist.Distro] = None
     ) -> bool:
-        return Ubuntu20to22Upgrader.supports(from_system, to_system)
+        return Ubuntu22to24Upgrader.supports(from_system, to_system)
 
     @property
     def upgrader_name(self) -> str:
-        return "Plesk::Ubuntu20to22Upgrader"
+        return "Plesk::Ubuntu22to24Upgrader"
 
     def create_upgrader(self, *args, **kwargs) -> DistUpgrader:
-        return Ubuntu20to22Upgrader(*args, **kwargs)
+        return Ubuntu22to24Upgrader(*args, **kwargs)
