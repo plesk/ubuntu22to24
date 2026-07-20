@@ -77,7 +77,7 @@ When dist-upgrade is finished, you will see the following login message:
 ```
 ===============================================================================
 Message from the Plesk dist-upgrader tool:
-The server has been upgraded to Ubuntu 22.
+The server has been upgraded to Ubuntu 24.
 You can remove this message from the /etc/motd file.
 ===============================================================================
 ```
