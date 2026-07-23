@@ -164,7 +164,7 @@ class Ubuntu22to24Upgrader(DistUpgrader):
         PHP_VERSIONS_SUPPORTED_BY_UBUNTU_24 = [
             str(php) for php in php.get_known_php_versions() if php >= version.PHPVersion("7.4")]
 
-        return [
+        checks = [
             common_actions.AssertMinPleskVersion("18.0.62"),
             common_actions.AssertPleskInstallerNotInProgress(),
             common_actions.AssertInstalledPhpVersionsInList(PHP_VERSIONS_SUPPORTED_BY_UBUNTU_24),
@@ -193,6 +193,12 @@ class Ubuntu22to24Upgrader(DistUpgrader):
             ),
             common_actions.AssertNoLibodbcFromMicrosoftRepository(),
         ]
+
+        if not options.skip_ancient_packages:
+            checks.append(
+                common_actions.AssertAncientDebPackagesNotInstalled(["focal", "bionic"]))
+
+        return checks
 
     def parse_args(self, args: typing.Sequence[str]) -> None:
         DESC_MESSAGE = f"""Use this upgrader to dist-upgrade an \
