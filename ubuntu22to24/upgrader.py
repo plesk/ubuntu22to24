@@ -5,6 +5,8 @@ import os
 import typing
 
 from pleskdistup import actions as common_actions
+from ubuntu22to24 import actions as custom_actions
+
 from pleskdistup.common import action, feedback, php, version, strings
 from pleskdistup.phase import Phase
 from pleskdistup.upgrader import dist, DistUpgrader, DistUpgraderFactory, PathType
@@ -130,6 +132,7 @@ class Ubuntu22to24Upgrader(DistUpgrader):
             ],
             "Dist-upgrade": [
                 common_actions.DoDistupgrade(),
+                custom_actions.SystemdReexec(),
             ],
             "Update Plesk": [
                 common_actions.UpdatePlesk(update_cmd_args=["--skip-cleanup"]),
