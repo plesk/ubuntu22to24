@@ -87,6 +87,17 @@ class Ubuntu22to24Upgrader(DistUpgrader):
                     os.path.abspath(upgrader_bin_path),
                     options,
                 ),
+                # libhashkit-dev on Ubuntu 24 conflicts with current libhashkit2, which
+                # is a dependency of the package on Ubuntu 22. So we have to
+                # replace libhashkit-dev and install it back after the conversion.
+                common_actions.RemoveReplacePackages(
+                    {
+                        "libhashkit-dev": "libhashkit-dev",
+                        "libmemcached-dev": "libmemcached-dev",
+                    },
+                    os.path.join(options.state_dir, "dist-upgrader-libhashkit.list"),
+                    "libhashkit-dev package reinstallation",
+                ),
             ],
             "Preupgrade packages": [
                 common_actions.RepairPleskInstallation(),  # Executed at the finish phase only
