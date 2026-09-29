@@ -82,6 +82,7 @@ class Ubuntu22to24Upgrader(DistUpgrader):
                 common_actions.AddInProgressSshLoginMessage(new_os),
                 common_actions.DisablePleskSshBanner(),
                 common_actions.UninstallTuxcareEls(),
+                common_actions.UninstallExtension("tuxcare-php"),
                 common_actions.ProhibitLibodbcFromMicrosoftRepository(),
                 common_actions.AddUpgradeSystemdService(
                     os.path.abspath(upgrader_bin_path),
@@ -134,6 +135,7 @@ class Ubuntu22to24Upgrader(DistUpgrader):
                 common_actions.UpdateLegacyPhpRepositories(self._distro_from, self._distro_to),
                 common_actions.AdoptAptRepositoriesUbuntu([
                     strings.create_replace_string_function('jammy', 'noble'),
+                    strings.create_replace_string_function('22.04', '24.04'),
                     strings.create_replace_regexp_function(
                         r'(http|https)://([^/]+)/(.*\b)(ubuntu|ubuntu-testing)/22\.04(\b.*)',
                         r'\g<1>://\g<2>/\g<3>\g<4>/24.04\g<5>')
