@@ -110,19 +110,11 @@ class Ubuntu22to24Upgrader(DistUpgrader):
                             new_value="127.0.0.1",
                             old_value="::ffff:127.0.0.1",
                         ),
-                        "revert": common_actions.ConfigValueReplacer(
-                            new_value="::ffff:127.0.0.1",
-                            old_value="127.0.0.1",
-                        ),
-                   },
+                    },
                     "mysqld.innodb_fast_shutdown": {
                         "prepare": common_actions.ConfigValueReplacer(
                             new_value="0",
                             old_value=None,
-                        ),
-                        "revert": common_actions.ConfigValueReplacer(
-                            new_value=None,
-                            old_value="0",
                         ),
                     },
                 }),
