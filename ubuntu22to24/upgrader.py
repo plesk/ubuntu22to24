@@ -7,7 +7,7 @@ import typing
 from pleskdistup import actions as common_actions
 from ubuntu22to24 import actions as custom_actions
 
-from pleskdistup.common import action, feedback, php, version, strings
+from pleskdistup.common import action, feedback, php, version, strings, systemd
 from pleskdistup.phase import Phase
 from pleskdistup.upgrader import dist, DistUpgrader, DistUpgraderFactory, PathType
 
@@ -87,6 +87,8 @@ class Ubuntu22to24Upgrader(DistUpgrader):
                 common_actions.AddUpgradeSystemdService(
                     os.path.abspath(upgrader_bin_path),
                     options,
+                    service_name = common_actions.DEFAULT_RESUME_SERVICE_NAME,
+                    remove_service_in_post = False, # will be removed before reboot
                 ),
                 # libhashkit-dev on Ubuntu 24 conflicts with current libhashkit2, which
                 # is a dependency of the package on Ubuntu 22. So we have to
@@ -157,6 +159,8 @@ class Ubuntu22to24Upgrader(DistUpgrader):
                     prepare_reboot=None,
                     post_reboot=action.RebootType.AFTER_LAST_STAGE,
                     name="final reboot",
+                    do_before_post_reboot=lambda: \
+                        systemd.remove_systemd_service(common_actions.DEFAULT_RESUME_SERVICE_NAME)
                 ),
             ],
         }
