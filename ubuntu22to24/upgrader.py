@@ -127,10 +127,10 @@ class Ubuntu22to24Upgrader(DistUpgrader):
                 common_actions.UpdateLegacyPhpRepositories(self._distro_from, self._distro_to),
                 common_actions.AdoptAptRepositoriesUbuntu([
                     strings.create_replace_string_function('jammy', 'noble'),
-                    strings.create_replace_string_function('22.04', '24.04'),
                     strings.create_replace_regexp_function(
                         r'(http|https)://([^/]+)/(.*\b)(ubuntu|ubuntu-testing)/22\.04(\b.*)',
-                        r'\g<1>://\g<2>/\g<3>\g<4>/24.04\g<5>')
+                        r'\g<1>://\g<2>/\g<3>\g<4>/24.04\g<5>'),
+                    strings.create_replace_string_function('22.04', '24.04'),
                     ], name="modify apt repositories to new OS"
                 ),
                 common_actions.SwitchPleskRepositories(to_os_version="24.04"),
